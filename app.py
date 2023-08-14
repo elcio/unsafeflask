@@ -5,6 +5,17 @@ import glob
 
 app = Flask(__name__)
 
+HEADER = """
+<link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+<nav>
+    <a href="/">Comentários</a>
+    <a href="/busca">Busca</a>
+    <a href="/calc">Calculadora</a>
+    <a href="/files">Arquivos</a>
+    <a href="/svg">SVG</a>
+</nav>
+"""
+
 @app.route("/", methods=['POST', 'GET'])
 def index():
 
@@ -32,7 +43,7 @@ def index():
             </div>
             '''
     return f'''
-        <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+        {HEADER}
         {comentarios_html}
         <form method='POST'>
             <input name="titulo" placeholder="Tĩtulo" /><br>
@@ -41,6 +52,34 @@ def index():
         </form>
         '''
 
+
+@app.route('/busca')
+def busca():
+    comentarios=[]
+    if 'q' in request.args:
+        comentarios = query(f'''SELECT *
+                                FROM comentario
+                                WHERE titulo LIKE '%{request.args["q"]}%'
+                                ORDER BY datahora''')
+    tbl_comentarios = ''
+    for comentario in comentarios:
+        tbl_comentarios += f'''
+            <tr>
+                <td>{comentario['titulo']}</td>
+                <td>{comentario['texto']}</td>
+                <td>{comentario['datahora']}</td>
+            </tr>
+        '''
+    return f'''
+        {HEADER}
+        <form>
+            <input name="q" placeholder="Buscar" />
+            <button>Buscar</button>
+        </form>
+        <table>
+            {tbl_comentarios}
+        </table>
+    '''
 
 def soma(a, b):
     return a + b
@@ -59,7 +98,7 @@ def calc():
         fn = eval(request.form['op'])
         resultado = fn(eval(request.form['a']), eval(request.form['b']))
     return f'''
-        <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+        {HEADER}
         <form method='POST'>
             <input name="a" type="number" />
             <select name="op">
@@ -85,7 +124,7 @@ def files():
     if 'f' in request.args:
         filecontent = open(request.args['f']).read()
     return f'''
-        <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+        {HEADER}
         <div style="display: flex">
             <div style="flex: 1">
                 {filelist}
@@ -95,3 +134,15 @@ def files():
             </div>
         </div>
         '''
+
+
+@app.route('/svg')
+def svg():
+    return f'''
+        {HEADER}
+        <svg version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg">
+        <polygon id="triangle" points="0,0 0,50 50,0" fill="#009900" stroke="#004400"/>
+        <script type="text/javascript">
+            alert("XSS Here!");
+        </script>
+        </svg>'''
